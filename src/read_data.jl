@@ -1,5 +1,6 @@
 using CSV
 using DataFrames
+using CategoricalArrays
 using Dates
 
 #
@@ -11,7 +12,7 @@ function read_items()
     # Master Data and Prices, prices are added as a new column to Master Data
 
     # read master data, columns names are concatenation of 2 first rows, all string are stripped
-    master = CSV.read("data/HLYM Master Data.csv", DataFrame, stripwhitespace=true, header = [1,2])
+    master = CSV.read("data/HLYM Master Data.csv", DataFrame, stripwhitespace=true, groupmark = ',', header = [1,2])
     # remove the underscores and 'Column' in the name coming second row
     rename!(master, replace.(names(master), r"_Column(\d)+|_" => ""))
     # replace space by underscore
@@ -19,25 +20,35 @@ function read_items()
     # uppercase
     rename!(master, uppercase.(names(master)))
  
-
+    # add the values
     prices = CSV.read("data/HLYM Prices.csv", DataFrame)
+    # the prices have duplicates, keep the highest values
     rename!(prices, ["ITEM","VALUE"])
+    prices = combine(groupby(prices,:ITEM), :VALUE => maximum => :VALUE)
     master = innerjoin(master, prices, on = :ITEM)
+
+    # remove missing and categorize ABC
+    subset!(master, :ABC => ByRow(!ismissing))
+    master[!,:ABC] = categorical(master[!,:ABC],ordered=true)
 
     return master
 end
 
+# read and unpivot demand data
 function read_demand()
     # Demand
-    demand = CSV.read("data/HLYM Demands.csv", DataFrame, transpose=true)
-    # convert the Item colun to dates and rename it to Month
-    rename!(demand, :Item => :Month)
-    transform!(demand,:Month=>(x->map(x) do d Date(d÷100,d%100) end)=>:Month)
-    # transform missings to zeros
-    transform!(demand, names(demand)[2:end] .=> (x->coalesce.(x,0)) .=> names(demand)[2:end])
-
-
-    
+    demand = CSV.read("data/HLYM Demands.csv", DataFrame)
+    # Unpivot
+    demand = stack(demand, Not(:Item), variable_name = :MONTH, value_name = :DEMAND)
+    # # change month to Dates
+    demand[!,:MONTH] = Date.(demand[!,:MONTH],DateFormat("yyyymm"))
+    #change missing and negative demand to zero
+    demand[!,:DEMAND] = map(demand[!,:DEMAND]) do x max(coalesce(x,0),0) end
+    # set integer
+    demand[!,:DEMAND] = floor.(Int,demand[!,:DEMAND])
+    # uppercase column names
+    rename!(demand, uppercase.(names(demand)))
+    sort!(demand, [:ITEM, :MONTH])
     return demand
 end
 
