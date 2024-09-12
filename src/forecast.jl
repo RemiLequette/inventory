@@ -1,17 +1,29 @@
 
-# utility function to add a forecast to a dataframe
-# the function must return a tuple with the forecast and the deviation
-# they are added to a column with the name of the forecast and DEV_ prefix
-add_forecast!(forecast_func, df, fcol) = transform!(df, :ITEM => ByRow(forecast_func) => [fcol, "DEV_"*fcol])
+#
+# forecast bias
+# f is the forceast function
+#
+function forecast_bias(d, f)
+    forecast = f(d)
+    bias = mean(d[end-length(forecast)+1:end] - forecast)
+    return bias
+end
+    
 
-# Add a moving average forecast to items based on the demand (last months) and for the lat month
-# items = dataframe of items
-# demand = dataframe of demand (months x items)
-# fname = name of the forecast, colums will be fname for the value and DEV_fname for the deviation
-# window = window for the average
-function add_ma_forecast!(items, demand, fcol = "MA", window = 12)    
-    add_forecast!(items, fcol) do item
-        data = demand[end-window-1:end-1,item]
-        (round(Int,mean(data)),std(data))
+#
+# exponential smoothing
+#
+function forecast_exponential_smoothing(y::Vector{T}, alpha::T, h::Int) where T
+    n = length(y)
+    yhat = similar(y)
+    yhat[1] = y[1]
+    for i in 2:n
+        yhat[i] = alpha * y[i] + (1 - alpha) * yhat[i - 1]
     end
+    forecast = similar(y)
+    forecast[1:n] = yhat
+    for i in n+1:n+h
+        forecast[i] = yhat[n]
+    end
+    return forecast
 end

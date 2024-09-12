@@ -1,10 +1,11 @@
 
 using Plots
+using Plots.PlotMeasures
 using StatsPlots
 using Statistics
 using Distributions
 
-#colors() = [:red, :blue, :green, :yellow, :silver, :orange, :brown, :pink, :cyan, :magenta, :gray, :lime, :olive]
+get_colors() = [:red, :blue, :green, :yellow, :silver, :orange, :brown, :pink, :cyan, :magenta, :gray, :lime, :olive]
 
 function stackedbar(df,x_col,value_col,group_col; kwargs...)
     return groupedbar(df[!,x_col],df[!,value_col],groups=df[!,group_col], bar_position=:stack; kwargs...)
@@ -21,13 +22,13 @@ function plot_demand(df,litem; mm = true, trend = true, window = 12)
         it = df[!,:ITEM] .== i
         months, demands = df[it,:MONTH], df[it,:DEMAND]
         p = bar(months,demands, label = i)
-        if mm plot!(p,months[1+window:end], ma(demands,window), color = :black, width = 3, label = "mm") end
+        if mm plot!(p,months[1+window:end], ma(demands,window), color = :black, width = 3, label = "12 months mean") end
         if trend
             c = lr(demands)
             plot!(p,[months[1],months[end]], [c[2], c[2]+c[1]*(length(months)-1)], color = :red, width = 3, label = "trend")
         end
         return p
-    end ..., layout = (n,1),size = (800,300*n))
+    end ..., layout = (n,1),size = (900,300*n), left_margin = 40px)
 end
 
 

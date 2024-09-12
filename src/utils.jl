@@ -34,7 +34,7 @@ function pretty(df; rename_cols = [nothing=>nothing], kwargs...)
             return v
         end
     end
-    return PrettyTables.pretty_table(HTML,df, header=replace(propertynames(df),rename_cols...), formatters=format_value, kwargs...)
+    return PrettyTables.pretty_table(HTML,df, header=replace(propertynames(df),rename_cols...), formatters=format_value; kwargs...)
 end	
 
 # remove colums if exists
@@ -47,7 +47,6 @@ end
 
 ma(demands,window = 12) = [round(Int,mean(demands[t-window:t-1])) for t in 1+window:length(demands)]
 lr(demands) = coef(linregress(collect(1:length(demands)),demands))
-
 
 
 # value of a quantity column
@@ -67,9 +66,4 @@ function abc_values(items, quantity = :INV_ONHAND)
     return c
 end
 
-function split_by_demand(items,demand) 
-    items_demand_set = Set(names(demand)[2:end])
-    items_with_demand = subset(items, :ITEM => ByRow(x -> x ∈ items_demand_set))
-    items_without_demand = subset(items, :ITEM => ByRow(x -> x ∉ items_demand_set))
-    return items_with_demand, items_without_demand
-end
+

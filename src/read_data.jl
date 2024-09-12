@@ -25,11 +25,14 @@ function read_items()
     # the prices have duplicates, keep the highest values
     rename!(prices, ["ITEM","VALUE"])
     prices = combine(groupby(prices,:ITEM), :VALUE => maximum => :VALUE)
-    master = innerjoin(master, prices, on = :ITEM)
+    master = leftjoin(master, prices, on = :ITEM)
 
-    # remove missing and categorize ABC
+    # ABC remove missing and categorize
     subset!(master, :ABC => ByRow(!ismissing))
     master[!,:ABC] = categorical(master[!,:ABC],ordered=true)
+
+    # remove the 20 products without product group
+    subset!(master, :PRODUCTGROUP => ByRow(!ismissing))
 
     return master
 end
