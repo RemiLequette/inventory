@@ -12,8 +12,8 @@ function stackedbar(df,x_col,value_col,group_col; kwargs...)
 end
 
 
-# plot demand for a list of items
-function plot_demand(df,litem; mm = true, trend = true, window = 12)
+# plot demand for a list of items (of to plot an additional forecast)
+function plot_demand(df,litem; mm = true, trend = false, window = 12, of = nothing, with_outliers = false)
     if typeof(litem) <: AbstractString || typeof(litem) <: Symbol
         litem = [litem]
     end	
@@ -21,11 +21,19 @@ function plot_demand(df,litem; mm = true, trend = true, window = 12)
     plot(map(litem) do i 
         it = df[!,:ITEM] .== i
         months, demands = df[it,:MONTH], df[it,:DEMAND]
-        p = bar(months,demands, label = i)
+        p = bar(months,demands, bar_width = 20, label = i)
+        if with_outliers
+            o = outliers(demands)
+            bar!(p,months[o],demands[o], color = :red, bar_width = 20, label = "outliers")
+        end
         if mm plot!(p,months[1+window:end], ma(demands,window), color = :black, width = 3, label = "12 months mean") end
         if trend
             c = lr(demands)
             plot!(p,[months[1],months[end]], [c[2], c[2]+c[1]*(length(months)-1)], color = :red, width = 3, label = "trend")
+        end
+        if !isnothing(of)
+            forecast = of(df[it,:DEMAND])
+            plot!(p,months[end-length(forecast)+1:end], forecast, color = :green, width = 3, label = string(Symbol(of)))
         end
         return p
     end ..., layout = (n,1),size = (900,300*n), left_margin = 40px)

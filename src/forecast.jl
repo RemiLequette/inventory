@@ -1,29 +1,44 @@
+using Statistics
+
+# errors
+# d is the data, f is the forecast
+errors(d, f) = d[end-length(f)+1:end] - f
+
+# forecast bias
+# f is the forecast, for the last periods
+bias(d, f) = mean(errors(d,f))
+
+# forecast mae
+# f is the forecast
+mae(d, f) = mean(abs.(errors(d,f)))
+
+# forecast mse
+# f is the forecast
+mse(d, f) = mean(abs2.(errors(d,f)))
+
+# forecast rmse
+# f is the forecast
+rmse(d, f) = sqrt(mse(d,f))
 
 #
-# forecast bias
-# f is the forceast function
+# outliers, bigger than factor time surronding values
+# returns a boolean array
 #
-function forecast_bias(d, f)
-    forecast = f(d)
-    bias = mean(d[end-length(forecast)+1:end] - forecast)
-    return bias
-end
-    
+outliers(d, factor = 2) = [(i == 1 || d[i] >= factor * d[i-1]) && (i == length(d) || d[i] >= factor * d[i+1])  for (i,v) in enumerate(d)]
 
 #
 # exponential smoothing
 #
-function forecast_exponential_smoothing(y::Vector{T}, alpha::T, h::Int) where T
-    n = length(y)
-    yhat = similar(y)
-    yhat[1] = y[1]
-    for i in 2:n
-        yhat[i] = alpha * y[i] + (1 - alpha) * yhat[i - 1]
+function exponential_smoothing(d;α=0.7,f1=0,outlierfactor = 2,without_outliers = true)
+    f = similar(d)
+    dno = d
+    if without_outliers
+        o = outliers(d, outlierfactor)
+        dno = [o[i] ? round(Int,(d[max(i-1,1)]+d[min(i+1,length(d))])/2) : v for (i,v) in enumerate(d)]
     end
-    forecast = similar(y)
-    forecast[1:n] = yhat
-    for i in n+1:n+h
-        forecast[i] = yhat[n]
+    f[1] = f1
+    for (i,v) in enumerate(dno[1:end-1])
+        f[i+1] = round(Int,α * v + (1 - α) * f[i])
     end
-    return forecast
+    return f
 end
