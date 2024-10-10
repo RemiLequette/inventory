@@ -3,6 +3,7 @@ using DataFrames
 using CategoricalArrays
 using Dates
 
+rootdata = "../../data/HLYM"
 #
 # read the data files and return as DataFrames
 # 
@@ -12,7 +13,7 @@ function read_items()
     # Master Data and Prices, prices are added as a new column to Master Data
 
     # read master data, columns names are concatenation of 2 first rows, all string are stripped
-    master = CSV.read("data/HLYM Master Data.csv", DataFrame, stripwhitespace=true, groupmark = ',', header = [1,2])
+    master = CSV.read("$rootdata/HLYM Master Data.csv", DataFrame, stripwhitespace=true, groupmark = ',', header = [1,2])
     # remove the underscores and 'Column' in the name coming second row
     rename!(master, replace.(names(master), r"_Column(\d)+|_" => ""))
     # replace space by underscore
@@ -21,7 +22,7 @@ function read_items()
     rename!(master, uppercase.(names(master)))
  
     # add the values
-    prices = CSV.read("data/HLYM Prices.csv", DataFrame)
+    prices = CSV.read("$rootdata/HLYM Prices.csv", DataFrame)
     # the prices have duplicates, keep the highest values
     rename!(prices, ["ITEM","VALUE"])
     prices = combine(groupby(prices,:ITEM), :VALUE => maximum => :VALUE)
@@ -40,7 +41,7 @@ end
 # read and unpivot demand data
 function read_demand()
     # Demand
-    demand = CSV.read("data/HLYM Demands.csv", DataFrame)
+    demand = CSV.read("$rootdata/HLYM Demands.csv", DataFrame)
     # Unpivot
     demand = stack(demand, Not(:Item), variable_name = :MONTH, value_name = :DEMAND)
     # # change month to Dates
