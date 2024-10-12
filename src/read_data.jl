@@ -56,3 +56,24 @@ function read_demand()
     return demand
 end
 
+# read the supply data (customer demand)
+function read_supply()
+    supply = CSV.read("$rootdata/Supply Ratio.csv", DataFrame)
+    # rename columns to remove spaces and uppercase
+    rename!(supply, uppercase.(replace.(names(supply), " " => "_")))
+    supply[!,:ORDER_DATE] = DateTime.(supply[!,:ORDER_DATE],DateFormat("dd/mm/yyy HH:MM"))
+    supply[!,:DELIVERY_DATE] = DateTime.(supply[!,:DELIVERY_DATE],DateFormat("dd/mm/yyy HH:MM"))
+    return supply
+end
+
+# read the delivery data (suppliers)
+function read_delivery()
+    delivery = CSV.read("$rootdata/Delivery Ratio.csv", DataFrame)
+    # rename columns to remove spaces and uppercase
+    rename!(delivery, uppercase.(replace.(names(delivery), " " => "_")))
+    # remove bad rows
+    subset!(delivery, :ORDER_DATE => ByRow(!ismissing))
+    delivery[!,:ORDER_DATE] = Date.(delivery[!,:ORDER_DATE],DateFormat("d/m/yyy"))
+    delivery[!,:DELIVERY_DATE] = map(delivery[!,:DELIVERY_DATE]) do s ismissing(s) ? s : Date(s,DateFormat("d/m/yyy")) end
+    return delivery
+end
