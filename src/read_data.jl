@@ -39,6 +39,7 @@ function read_items()
 end
 
 # read and unpivot demand data
+# demand data will not be used in the future, it is replaced by the sales data
 function read_demand()
     # Demand
     demand = CSV.read("$rootdata/HLYM Demands.csv", DataFrame)
@@ -56,21 +57,31 @@ function read_demand()
     return demand
 end
 
-# read the supply data (customer demand)
+# read the supply data (customer sales)
 function read_supply()
-    supply = CSV.read("$rootdata/Supply Ratio.csv", DataFrame)
+    supply = CSV.read("$rootdata/Supply Ratio.csv", DataFrame, stripwhitespace=true, groupmark = ',')
     # rename columns to remove spaces and uppercase
     rename!(supply, uppercase.(replace.(names(supply), " " => "_")))
+    # cleanup a few names
+    rename!(supply, "DELIVERED_QTY" => "DELIVERED_QUANTITY")
+    # convert dates
     supply[!,:ORDER_DATE] = DateTime.(supply[!,:ORDER_DATE],DateFormat("dd/mm/yyy HH:MM"))
     supply[!,:DELIVERY_DATE] = DateTime.(supply[!,:DELIVERY_DATE],DateFormat("dd/mm/yyy HH:MM"))
+
+    # remove old data
+    subset!(supply, :ORDER_DATE => ByRow(d->year(d) >= 2022))
+
     return supply
 end
 
 # read the delivery data (suppliers)
 function read_delivery()
-    delivery = CSV.read("$rootdata/Delivery Ratio.csv", DataFrame)
+    delivery = CSV.read("$rootdata/Delivery Ratio.csv", DataFrame, stripwhitespace=true, groupmark = ',')
     # rename columns to remove spaces and uppercase
     rename!(delivery, uppercase.(replace.(names(delivery), " " => "_")))
+    # cleanup a few names
+    rename!(delivery, "ORDER_QTY" => "ORDERED_QUANTITY")
+    rename!(delivery, "DELIVERED_QTY" => "DELIVERED_QUANTITY")
     # remove bad rows
     subset!(delivery, :ORDER_DATE => ByRow(!ismissing))
     delivery[!,:ORDER_DATE] = Date.(delivery[!,:ORDER_DATE],DateFormat("d/m/yyy"))

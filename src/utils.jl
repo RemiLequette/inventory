@@ -1,6 +1,8 @@
 using Format
 using PrettyTables
 
+using Dates
+using DataFrames
 using LinearRegression
 using Statistics
 using LinearAlgebra
@@ -67,3 +69,6 @@ function abc_values(items, quantity = :INV_ONHAND)
 end
 
 
+
+
+add_supply_ratio!(df_supply) = transform!(df_supply, [:ORDERED_QUANTITY,:DELIVERED_QUANTITY] => ByRow((o,d)->ismissing(d) ? 0 : ((d < o) ? 0 : 1)) => :SUPPLY_RATIO)

@@ -67,3 +67,19 @@ function histo_demand(df,litem; normal = true, lognormal = false, gamma = true)
     end ..., layout = (n,1),size = (800,300*n))
 end
 
+function plot_inventory(df,items)
+    n = length(items)
+    plot(map(items) do i
+        it = df[!,:ITEM] .== i
+        p = plot(df[it,:DATE],df[it,:INV_ONHAND], label = "on hand", xlabel = "date", ylabel = "quantity", size = (800,300),title="Inventory for $i")
+        plot!(p,df[it,:DATE],df[it,:INV_ONORDER], label = "on order")
+        plot!(p,df[it,:DATE],df[it,:INV_BACKORDER], label = "backorder")
+        return p
+    end ..., layout = (n,1),size = (800,300*n))
+end
+
+function plot_sales(df, item)
+    d_it = filter(row -> row.ITEM == item, eachrow(df))
+    p = plot(d_it.ORDER_DATE,d_it.ORDERED_QUANTITY, label = "order quantity", xlabel = "date", ylabel = "quantity", size = (800,300))
+    return p
+end
